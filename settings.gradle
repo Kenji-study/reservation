@@ -1,2 +1,2 @@
 rootProject.name = 'reservation'
-include 'core','api','admin','batch'
+include 'core', 'api', 'admin', 'batch'
