@@ -1,0 +1,20 @@
+services:
+
+  db:
+    image: postgres:18
+    restart: unless-stopped
+
+    # パラレルクエリの共有メモリのサイズに余裕を持たせる
+    shm_size: 128mb
+
+    environment:
+      POSTGRES_DB: reservation
+      POSTGRES_USER: reservation
+      POSTGRES_PASSWORD: localPass
+    ports:
+      - "127.0.0.1:5432:5432" # 自分のPCからのみ接続許可
+    volumes:
+      - pgdata:/var/lib/postgresql # コンテナ側の保存先と紐付け
+
+volumes:
+  pgdata: # 名前つきボリュームの定義
