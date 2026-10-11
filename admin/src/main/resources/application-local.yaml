@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/reservation
+    username: reservation
+    password: localPass
+management:
+  endpoint:
+    health:
+      show-details: always
