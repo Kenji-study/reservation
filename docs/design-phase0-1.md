@@ -2,6 +2,8 @@
 
 Oct 3, 2026 · @kenji
 
+> 改訂(2026-10-19):DBアクセスを Doma 2 → MyBatis、開発環境を VS Code → IntelliJ IDEA、Java を 21 → 25 に変更。Backlog をやめたのでブランチ名の規則を変更。理由は 5章「技術の選定」と 6章「ブランチ運用」。
+
 ## 1. 範囲と前提
 
 この設計書は WBS 0-1 の成果物で、フェーズ0(土台)とフェーズ1(管理画面と本番デプロイ)を実装するのに必要なことをすべて決める。フェーズ1の達成基準は「本番URLで管理画面にログインし、データを登録できる」。
@@ -18,7 +20,7 @@ Oct 3, 2026 · @kenji
 ### 前提
 
 - 題材のお店は「一人〜数人でやっている美容室・整体院のような、担当者を指名して予約する1店舗」とする。複数店舗は扱わない。
-- 開発は個人PC(Windows 11)。JDK 21 / Node 24 / Docker Desktop は導入済み。
+- 開発は個人PC(Windows 11)。JDK 25(21 も併存)/ Node 24 / Docker Desktop / IntelliJ IDEA は導入済み。
 - 管理画面の利用者はスタッフ数人、データは数百〜数千件。性能より「正しく・安全に・直しやすく」を優先する。
 - フェーズ1の重点テーマは「命名と責務分割」。設計もこの観点で、どこに何を書くかを先に決めておく。
 
@@ -201,7 +203,7 @@ DBはPostgreSQL、テーブルは4つ。ログインする「アカウント」�
 - 一度pushしたマイグレーションは書き換えない。直したいときは新しい番号で `alter` を書く。
 - 開発用データ(STAFFアカウント、メニュー100件など)は本番に入らない別の場所 `db/devdata` に置き、`local` プロファイルのときだけ読み込む。
 - マイグレーションを実行するのは `admin` アプリだけにする。`api` と `batch` は `spring.flyway.enabled=false`。3つが同時に起動して同時にマイグレーションするのを避けるため。ただしこれは本番に出るのがadminだけのフェーズ1の暫定で、テーブルの変更がadminのデプロイに依存する弱点がある。見直しはフェーズ2(9章)。
-- テーブルを作るのはFlywayだけ。DomaはSQLを実行するだけで、テーブルの定義は持たない。
+- テーブルを作るのはFlywayだけ。MyBatisはSQLを実行するだけで、テーブルの定義は持たない。
 
 ## 5. モジュール構成とリポジトリ
 
@@ -212,8 +214,8 @@ DBはPostgreSQL、テーブルは4つ。ログインする「アカウント」�
 | 項目 | 選定 | 理由 |
 | --- | --- | --- |
 | Spring Boot | Initializr で選べる最新の安定版(4.x) | 新規案件は最新版で始めるのが普通。SNAPSHOT / M版は選ばない |
-| ビルド | Gradle(Groovy DSL)+ Gradle Wrapper + バージョンカタログ | VS CodeではKotlin DSLの補完が弱い。バージョンは `gradle/libs.versions.toml` に集約 |
-| DBアクセス | Doma 2(Spring Bootと連携する部品を使う) | SQLを自分で書いてSQLの力をつけるため。SQLとJavaのずれをコンパイル時に検出できる。JPAは2周目以降で触る |
+| ビルド | Gradle(Groovy DSL)+ Gradle Wrapper + バージョンカタログ | 0-3 で Groovy DSL で作ったのでそのまま(Kotlin DSL は2周目以降)。バージョンは `gradle/libs.versions.toml` に集約 |
+| DBアクセス | MyBatis(Spring Boot と連携する mybatis-spring-boot-starter。Spring Boot 4 に対応した版を 0-5 で公式から確かめて入れる) | SQLを自分で書いてSQLの力をつけるため。日本の案件で最も多く使われている方式の一つ(2026-10-19 に Doma 2 から変更)。SQLとJavaのずれは実行時に分かるので、Mapper ごとに小さなテストを書いて早めに気づく。JPAは2周目以降で触る |
 | DB | PostgreSQL(Docker公式イメージの最新メジャー) | 無料で、AWSのRDSにもそのまま移せる |
 | 画面 | Thymeleaf + Spring MVC | 計画どおり |
 | 認証 | Spring Security(フォームログイン、セッション) | 計画どおり |
@@ -223,20 +225,20 @@ DBはPostgreSQL、テーブルは4つ。ログインする「アカウント」�
 
 | モジュール | プラグイン | 置くもの | 置かないもの |
 | --- | --- | --- | --- |
-| core | java-library | エンティティ、DAOとSQLファイル、業務ルール(枠の重なり判定など)、Flywayのマイグレーション | Controller、画面用のForm、HTTPやセッションの知識 |
+| core | java-library | エンティティ、Mapper(インターフェースとSQLのXML)、業務ルール(枠の重なり判定など)、Flywayのマイグレーション | Controller、画面用のForm、HTTPやセッションの知識 |
 | admin | Spring Boot | Controller、Form、画面テンプレート、セキュリティ設定、画面向けのサービス | 業務ルールそのもの |
 | api | Spring Boot | フェーズ0は起動するだけ。フェーズ2でREST API | — |
 | batch | Spring Boot | フェーズ0は起動するだけ。フェーズ3でジョブ | — |
 
-`core` に Spring Boot プラグインを付けると実行用のjarを作ろうとして失敗する。ライブラリとして作る、という区別が 0-3 の最初のつまずきどころ。もう一つ、Domaはコンパイル時にSQLファイルを検査するため、DAOを置くモジュール(core)のGradle設定にアノテーションプロセッサの指定が要る。これが二つ目のつまずきどころ。
+`core` に Spring Boot プラグインを付けると実行用のjarを作ろうとして失敗する。ライブラリとして作る、という区別が 0-3 の最初のつまずきどころ。もう一つ、MyBatisの Mapper の XML をどこに置き、Spring Boot にどう見つけてもらうか(Mapper インターフェースの登録と XML の置き場所の設定)。これが二つ目のつまずきどころ。
 
 ### パッケージ
 
 機能ごとに切る(package by feature)。層ごと(`controller` / `service` / `repository`)に切ると、メニューの修正で4つのパッケージを行き来することになるため。
 
 ```
-core:   io.github.kenjistudy.reservation.menu   … Menu, MenuDao(+ SQLファイル)
-        io.github.kenjistudy.reservation.slot   … Slot, SlotDao, SlotOverlapChecker(仮)
+core:   io.github.kenjistudy.reservation.menu   … Menu, MenuMapper(+ SQLのXML)
+        io.github.kenjistudy.reservation.slot   … Slot, SlotMapper, SlotOverlapChecker(仮)
 admin:  io.github.kenjistudy.reservation.admin.menu … MenuController, MenuForm, MenuAdminService
         io.github.kenjistudy.reservation.admin.security … SecurityConfig ほか
 ```
@@ -266,7 +268,7 @@ reservation/
 
 ## 6. 開発環境とCI
 
-ローカルではDBだけをDocker Composeで動かし、アプリはVS Codeか `gradlew` から直接起動する。アプリまでコンテナにすると、コードを変えるたびにイメージを作り直すことになり遅いため。
+ローカルではDBだけをDocker Composeで動かし、アプリはIntelliJ IDEAか `gradlew` から直接起動する。アプリまでコンテナにすると、コードを変えるたびにイメージを作り直すことになり遅いため。
 
 ### ローカル開発
 
@@ -282,9 +284,9 @@ reservation/
 
 GitHub Flowにする。`main` は常に本番と同じ状態で、作業はブランチを切ってプルリクエスト(PR)でマージする。
 
-- ブランチ名はBacklogの課題キー+内容(例:`feature/KADAI123-288-menu-crud`)。課題とコードが後から対応づく。
+- ブランチ名はWBSの番号+内容(形は `feature/<WBS番号>-<内容>`。中身は課題ごとに自分で考える)。WBSとコードが後から対応づく。
 - `main` へは直接pushしない。GitHubのブランチ保護で「CIが通らないとマージできない」を設定する。
-- PRは1課題1つ。大きくなったら分ける。PRの説明にBacklogの課題URLを貼る。
+- PRは1課題1つ。大きくなったら分ける。PRの説明にWBSの番号と完了条件を書く。
 - マージ方法は「Squash and merge」に統一し、`main` の履歴を1PR=1コミットにする。
 
 ### CI(ci.yml)
@@ -292,7 +294,7 @@ GitHub Flowにする。`main` は常に本番と同じ状態で、作業はブ�
 | 項目 | 決めごと |
 | --- | --- |
 | きっかけ | PRの作成・更新時と、`main` へのpush時 |
-| 環境 | ubuntu-latest、Temurin 21 |
+| 環境 | ubuntu-latest、Temurin 25 |
 | やること | `./gradlew build`(コンパイル+テスト+jar作成)。Gradleのキャッシュを効かせる |
 | DB | フェーズ0〜3はGitHub Actionsのサービスコンテナで postgres を起動する。フェーズ4でTestcontainersに置き換える |
 | 結果 | 失敗したらPRにバツが付き、マージできない |

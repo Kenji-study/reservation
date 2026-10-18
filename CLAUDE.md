@@ -35,12 +35,12 @@
 
 ## 技術構成
 
-- バックエンド:Java 21(Eclipse Temurin)、Spring Boot、Gradle マルチモジュール
+- バックエンド:Java 25(Eclipse Temurin)、Spring Boot 4、Gradle マルチモジュール
 - 管理画面:Spring MVC + Thymeleaf
 - バッチ:Spring Batch
 - フロントエンド:React + TypeScript(Vite)
 - DB とマイグレーション:Docker Compose でローカル起動、Flyway
-- DB アクセス:Doma 2(SQL は SQL ファイルに自分で書く。JPA は使わない)
+- DB アクセス:MyBatis(SQL は Mapper の XML に自分で書く。JPA は使わない)
 - CI/CD:GitHub Actions
 - インフラ:フェーズ1は EC2 一台(Docker Compose)、フェーズ2で S3 + CloudFront
 
@@ -64,7 +64,7 @@
 
 ## 開発環境
 
-- Windows 11、VS Code
+- Windows 11、IntelliJ IDEA(日本語メニュー)。JDK 25(21 も入れたまま)
 - Node.js 24 LTS、Docker Desktop(WSL 2)
 
 ## 話し方
