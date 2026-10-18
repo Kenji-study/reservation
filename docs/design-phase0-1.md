@@ -215,7 +215,7 @@ DBはPostgreSQL、テーブルは4つ。ログインする「アカウント」�
 | --- | --- | --- |
 | Spring Boot | Initializr で選べる最新の安定版(4.x) | 新規案件は最新版で始めるのが普通。SNAPSHOT / M版は選ばない |
 | ビルド | Gradle(Groovy DSL)+ Gradle Wrapper + バージョンカタログ | 0-3 で Groovy DSL で作ったのでそのまま(Kotlin DSL は2周目以降)。バージョンは `gradle/libs.versions.toml` に集約 |
-| DBアクセス | MyBatis(Spring Boot と連携する mybatis-spring-boot-starter。Spring Boot 4 に対応した版を 0-5 で公式から確かめて入れる) | SQLを自分で書いてSQLの力をつけるため。日本の案件で最も多く使われている方式の一つで、反復ドリルでも練習している(2026-10-19 に Doma 2 から変更)。SQLとJavaのずれは実行時に分かるので、Mapper ごとに小さなテストを書いて早めに気づく。JPAは2周目以降で触る |
+| DBアクセス | MyBatis(Spring Boot と連携する mybatis-spring-boot-starter。Spring Boot 4 に対応した版を 0-5 で公式から確かめて入れる) | SQLを自分で書いてSQLの力をつけるため。日本の案件で最も多く使われている方式の一つ(2026-10-19 に Doma 2 から変更)。SQLとJavaのずれは実行時に分かるので、Mapper ごとに小さなテストを書いて早めに気づく。JPAは2周目以降で触る |
 | DB | PostgreSQL(Docker公式イメージの最新メジャー) | 無料で、AWSのRDSにもそのまま移せる |
 | 画面 | Thymeleaf + Spring MVC | 計画どおり |
 | 認証 | Spring Security(フォームログイン、セッション) | 計画どおり |
