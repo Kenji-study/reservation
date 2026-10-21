@@ -188,8 +188,10 @@ DBはPostgreSQL、テーブルは4つ。ログインする「アカウント」�
 | login\_id | varchar(50) | not null, unique | ログインID |
 | password\_hash | varchar(100) | not null | BCryptのハッシュ |
 | role | varchar(20) | not null, check (ADMIN / STAFF) | ロール |
-| staff\_id | bigint | FK → staff | STAFFが自分の枠を判定するのに使う。ADMINは空でよいが、STAFFは必須。CHECK制約「roleがSTAFFならstaff\_idはnot null」で守る |
+| staff\_id | bigint | FK → staff, unique | STAFFが自分の枠を判定するのに使う。ADMINは空でよいが、STAFFは必須。CHECK制約「roleがSTAFFならstaff\_idはnot null」で守る |
 | enabled | boolean | not null default true | 無効化したアカウントはログイン不可 |
+
+担当者1人につきアカウントは0か1つ。2つ以上あると「自分の枠」がどのアカウントのものか決まらないため、`staff_id` に一意制約をかける。ADMINは `staff_id` が空なので、ADMINが何人いても一意制約にはかからない(PostgreSQLの一意制約は、標準の設定ではNULL同士を重複とみなさない)。アカウントを持たない担当者(ログインしないアルバイトなど)はそのまま作れる。
 
 ### 削除の方針
 
