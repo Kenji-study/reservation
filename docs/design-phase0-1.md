@@ -2,6 +2,8 @@
 
 Oct 3, 2026 · @kenji
 
+> 改訂(2026-10-24):名前の列の空文字をDBで弾く、`created_at`・`updated_at` はアプリが入れる(DEFAULT・トリガーなし)と決めた。理由は 4章「共通ルール」。
+>
 > 改訂(2026-10-19):DBアクセスを Doma 2 → MyBatis、開発環境を VS Code → IntelliJ IDEA、Java を 21 → 25 に変更。Backlog をやめたのでブランチ名の規則を変更。理由は 5章「技術の選定」と 6章「ブランチ運用」。
 
 ## 1. 範囲と前提
@@ -143,6 +145,15 @@ DBはPostgreSQL、テーブルは4つ。ログインする「アカウント」�
 - 主キーは `id bigint generated always as identity`。
 - 全テーブルに `created_at`、`updated_at`(どちらも `timestamptz not null`)と、楽観ロック用の `version integer not null default 0` を持つ。
 - 業務上の制約(必須、範囲、一意)は画面のチェックだけでなくDBの制約でも守る。アプリのバグがあってもデータが壊れないようにするため。
+  - 判断の基準は「どの入口(画面、API、バッチ、CSV取込、開発用データ、手で実行するSQL)から書き込まれても、あってはいけない状態か」。そうならDBで弾く。画面や用途によって変わるルールや、変わりやすい細かい数値はアプリ側で守る。
+  - DBは「あってはいけない状態を弾く」だけにして、値を入れるのはアプリの仕事とする。
+- 名前の列(`menu.name`、`staff.name`)は `not null` に加えて、空文字(`''`)もCHECK制約で弾く。`not null` はNULLしか弾かないため。名前が空のデータは、どのアプリから入っても意味をなさない。空白だけの値をどう扱うかは、画面側の前後の空白の扱いと合わせて決める。
+- `created_at`、`updated_at` は `not null` だけを付け、DEFAULTもトリガーも付けない。値は必ずアプリが入れる。
+  - 入れ忘れたときは `not null` 違反でINSERT・UPDATEが失敗するので、黙ってNULLが入ることはない。
+  - DEFAULTを付けない理由は、時刻を入れる場所をアプリに一本化するため。アプリが時刻を入れれば、テストで時刻を固定できる(Javaの `Clock` を差し込む)。
+  - トリガーを付けない理由は、MyBatisのSQLに書いていない値の変更が起きると読む人が気づけないことと、アプリが渡した値も上書きされるため。PostgreSQLのDEFAULTはINSERT時にしか効かず、MySQLの `ON UPDATE CURRENT_TIMESTAMP` に当たる仕組みもないので、DB側で更新日時を自動で入れるにはトリガーが必要になる。
+  - INSERTのときは `created_at` と `updated_at` の両方に、同じ1つの時刻を入れる。「一度も更新されていない」を2つの値が等しいかで判定できるようにするため。`updated_at` を未更新の間NULLにする流儀は、`not null` を付けられず並び替えでNULLの扱いが増えるので採らない。
+  - 開発用データ(`db/devdata`)のINSERTでも、2つの列に値を書く。
 - 名前は複数形にしない(`menu`、`staff`)。列名はスネークケース。
 
 ### menu(メニュー)
@@ -150,7 +161,7 @@ DBはPostgreSQL、テーブルは4つ。ログインする「アカウント」�
 | 列 | 型 | 制約 | 説明 |
 | --- | --- | --- | --- |
 | id | bigint | PK |  |
-| name | varchar(50) | not null | メニュー名 |
+| name | varchar(50) | not null, check (空文字でない) | メニュー名 |
 | description | varchar(500) |  | 説明 |
 | duration\_minutes | integer | not null, check (15〜480) | 所要時間 |
 | price | integer | not null, check (>= 0) | 税込の円 |
@@ -162,7 +173,7 @@ DBはPostgreSQL、テーブルは4つ。ログインする「アカウント」�
 | 列 | 型 | 制約 | 説明 |
 | --- | --- | --- | --- |
 | id | bigint | PK |  |
-| name | varchar(50) | not null | 氏名 |
+| name | varchar(50) | not null, check (空文字でない) | 氏名 |
 | display\_order | integer | not null default 0 | 表示順 |
 | active | boolean | not null default true | 在籍中か |
 
