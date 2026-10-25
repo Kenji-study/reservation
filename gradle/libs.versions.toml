@@ -14,3 +14,6 @@ spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-st
 postgresql = { module = "org.postgresql:postgresql" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+spring-boot-starter-flyway-test = { module = "org.springframework.boot:spring-boot-starter-flyway-test" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
