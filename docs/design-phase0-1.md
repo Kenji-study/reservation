@@ -2,6 +2,8 @@
 
 Oct 3, 2026 · @kenji
 
+> 改訂(2026-10-25):`api`・`batch` で Flyway を止める方法を、設定(`spring.flyway.enabled=false`)から「依存を入れない」に変更。0-5 の実装に合わせた。理由は 4章「Flywayの方針」。
+>
 > 改訂(2026-10-24):名前の列の空文字をDBで弾く、`created_at`・`updated_at` はアプリが入れる(DEFAULT・トリガーなし)と決めた。理由は 4章「共通ルール」。
 >
 > 改訂(2026-10-19):DBアクセスを Doma 2 → MyBatis、開発環境を VS Code → IntelliJ IDEA、Java を 21 → 25 に変更。Backlog をやめたのでブランチ名の規則を変更。理由は 5章「技術の選定」と 6章「ブランチ運用」。
@@ -215,7 +217,7 @@ DBはPostgreSQL、テーブルは4つ。ログインする「アカウント」�
 - マイグレーションは `core` モジュールの `src/main/resources/db/migration` に置く。ファイル名は `V1__create_menu.sql` のように、番号+内容。
 - 一度pushしたマイグレーションは書き換えない。直したいときは新しい番号で `alter` を書く。
 - 開発用データ(STAFFアカウント、メニュー100件など)は本番に入らない別の場所 `db/devdata` に置き、`local` プロファイルのときだけ読み込む。
-- マイグレーションを実行するのは `admin` アプリだけにする。`api` と `batch` は `spring.flyway.enabled=false`。3つが同時に起動して同時にマイグレーションするのを避けるため。ただしこれは本番に出るのがadminだけのフェーズ1の暫定で、テーブルの変更がadminのデプロイに依存する弱点がある。見直しはフェーズ2(9章)。
+- マイグレーションを実行するのは `admin` アプリだけにする。`api` と `batch` には Flyway の依存(`spring-boot-starter-flyway`・`flyway-database-postgresql`)を入れない。3つが同時に起動して同時にマイグレーションするのを避けるため。依存がなければ Flyway の自動設定が動かないので、`spring.flyway.enabled=false` の設定より確実で、設定のし忘れも起きない。マイグレーションのSQL自体は `core` に置き、`admin` が `core` に依存することで読み込む。ただしこれは本番に出るのがadminだけのフェーズ1の暫定で、テーブルの変更がadminのデプロイに依存する弱点がある。見直しはフェーズ2(9章)。
 - テーブルを作るのはFlywayだけ。MyBatisはSQLを実行するだけで、テーブルの定義は持たない。
 
 ## 5. モジュール構成とリポジトリ
