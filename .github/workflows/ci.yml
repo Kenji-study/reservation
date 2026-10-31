@@ -4,3 +4,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "Hello"
+      - uses: actions/checkout@v7
+      - run: ls -la
