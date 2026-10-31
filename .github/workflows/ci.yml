@@ -1,8 +1,11 @@
 on: [push]
 jobs:
-  say-hello:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Hello"
       - uses: actions/checkout@v7
-      - run: ls -la
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - run: java --version
