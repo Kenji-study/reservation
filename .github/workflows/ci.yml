@@ -9,4 +9,4 @@ jobs:
           distribution: temurin
           java-version: '25'
       - run: java --version
-      - run: ./gradelew build
+      - run: ./gradlew build
